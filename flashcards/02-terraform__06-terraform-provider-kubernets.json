@@ -1,0 +1,94 @@
+{
+  "flashcards": [
+    {
+      "conceito": "Terraform no ecossistema Kubernetes",
+      "pergunta": "Qual é a principal vantagem de gerenciar recursos do Kubernetes (como Namespaces e Deployments) via Terraform em vez de aplicar manifests YAML manualmente com `kubectl apply`?",
+      "resposta": "Traz o ciclo de vida do Kubernetes para a **Infraestrutura como Código (IaC)**.\n- **Rastreabilidade** do estado (tfstate)\n- **Versionamento** e **code review**\n- Menos **drift** entre ambientes",
+      "nivel": "Iniciante"
+    },
+    {
+      "conceito": "Kubernetes Provider vs Kubectl Provider",
+      "pergunta": "Qual é a principal diferença de funcionamento e caso de uso entre o Kubernetes Provider e o Kubectl Provider no Terraform?",
+      "resposta": "A diferença está no **formato**: HCL nativo vs YAML bruto.\n- **Kubernetes Provider** → objetos traduzidos para HCL; ideal para padronizar de forma declarativa, sem YAML\n- **Kubectl Provider** → aceita YAML bruto via `kubectl_manifest` (saídas de Helm, arquivos legados), simulando o `kubectl apply`",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Limitações do Kubernetes Provider",
+      "pergunta": "Por que o Kubernetes Provider oficial do Terraform pode não ser suficiente para cobrir todos os cenários dentro de um cluster Kubernetes?",
+      "resposta": "Porque **nem todo recurso da API** (principalmente **CRDs**) tem um bloco HCL equivalente no provider.\n- Nesses casos, complementa-se com o **Kubectl Provider** (YAML direto) ou com **Helm**",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Gerenciamento de Secrets no Terraform",
+      "pergunta": "Por que definir valores em texto puro ou em base64 diretamente no recurso `kubernetes_secret` é má prática em produção, e qual a solução recomendada?",
+      "resposta": "Porque **base64 é codificação, não criptografia**.\n- O segredo fica exposto no **Git** e no **tfstate**\n- Solução: integrar o Terraform a um cofre externo (**HashiCorp Vault**, **AWS Secrets Manager**) para injeção segura e credenciais dinâmicas",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "HashiCorp Vault e Credenciais Dinâmicas",
+      "pergunta": "Como a integração do Vault Provider com o Terraform aprimora a postura de segurança (zero-trust) na gestão de segredos?",
+      "resposta": "O Terraform pede ao Vault **credenciais dinâmicas e temporárias** em tempo de execução.\n- Nada fica gravado estaticamente no repositório\n- Credenciais **efêmeras** expiram sozinhas\n- Menor superfície de ataque em caso de vazamento",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "RBAC via Terraform (Role vs ClusterRole)",
+      "pergunta": "Ao provisionar RBAC via Terraform, qual a diferença de escopo entre `kubernetes_role`/`kubernetes_role_binding` e `kubernetes_cluster_role`/`kubernetes_cluster_role_binding`?",
+      "resposta": "A diferença é o **escopo**: um namespace ou o cluster inteiro.\n- **Role / RoleBinding** → permissões restritas a **um namespace**\n- **ClusterRole / ClusterRoleBinding** → valem no **cluster todo** e em recursos sem namespace (ex.: nodes)",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Princípio do Menor Privilégio em RBAC",
+      "pergunta": "Como o princípio do menor privilégio (least privilege) deve ser aplicado ao criar regras de RBAC no Terraform?",
+      "resposta": "Concedendo **só os verbos e recursos estritamente necessários**.\n- Ex.: `get` e `list` em vez de `*` ou `delete`\n- Restringir a recursos e grupos/usuários específicos\n- Evita exclusões acidentais e acessos indevidos em clusters multi-tenant",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Papel do Helm Provider no Terraform",
+      "pergunta": "Quando é preferível utilizar o Helm Provider do Terraform em vez de declarar recursos individuais com o Kubernetes Provider?",
+      "resposta": "Para implantar **stacks complexas prontas** (Prometheus, Grafana, Istio...).\n- Um **Helm Chart** já empacota dezenas de manifests interdependentes (Deployments, CRDs, RBAC, ConfigMaps)\n- Tudo vira **poucas linhas** de IaC",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Abordagem Híbrida: Terraform vs Ferramentas de GitOps/Helm",
+      "pergunta": "Em arquiteturas corporativas de grande escala, qual é a divisão de responsabilidades recomendada entre Terraform, Helm e ferramentas GitOps (ArgoCD/FluxCD)?",
+      "resposta": "Cada ferramenta cuida de **uma camada**:\n- **Terraform** → infraestrutura base (VPCs, clusters, namespaces, quotas, RBAC básico)\n- **Helm** → empacota aplicações e componentes complexos\n- **ArgoCD/FluxCD** → entrega contínua, sincronizando o cluster com o Git",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "GitOps com ArgoCD vs Push Model do Terraform",
+      "pergunta": "Qual a mudança conceitual fundamental entre o modelo tradicional de deploy via Terraform/CI e o modelo GitOps adotado pelo ArgoCD?",
+      "resposta": "A mudança é de **push** para **pull**.\n- **Terraform/CI (push)** → a pipeline externa envia comandos ao cluster\n- **GitOps (pull)** → um agente **dentro do cluster** observa o Git (fonte única da verdade), aplica as mudanças e **corrige drifts** sozinho",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "Pipeline DevOps Moderna (Terraform + GitHub Actions + ArgoCD)",
+      "pergunta": "Como se conectam Terraform, GitHub Actions e ArgoCD em um pipeline completo de entrega contínua para Kubernetes?",
+      "resposta": "Cada um cuida de uma etapa do fluxo:\n- **Terraform** → provisiona a infraestrutura do cluster\n- **GitHub Actions** → CI: testes, validações, build da imagem e atualização dos manifests\n- **ArgoCD** → detecta a mudança nos manifests e sincroniza a aplicação no cluster",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "Dependência Implícita no Kubernetes Provider",
+      "pergunta": "Como o Terraform garante a ordem correta de provisionamento entre recursos dependentes do Kubernetes, como um Namespace e um Deployment?",
+      "resposta": "Por **dependência implícita**: ao referenciar um atributo de outro recurso, o Terraform liga os dois no grafo.\n- O Namespace é criado **antes** do Deployment automaticamente\n```hcl\nnamespace = kubernetes_namespace.demo.metadata[0].name\n```",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Detecção de Drift em Recursos Kubernetes",
+      "pergunta": "Como o Terraform lida com alterações manuais feitas via CLI (ex.: `kubectl scale`) em um Deployment gerenciado por código?",
+      "resposta": "Ele detecta o **drift** e propõe **voltar ao valor do código**.\n- No `terraform plan`/`apply`, consulta a API do Kubernetes\n- Compara o estado real com o `tfstate`\n- O plano reverte as réplicas para o valor do bloco HCL",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Gerenciamento de ConfigMaps via IaC",
+      "pergunta": "Qual a vantagem técnica de provisionar objetos como `kubernetes_config_map` via Terraform em vez de manifests isolados?",
+      "resposta": "Permite **parametrizar a config com outputs de outros recursos** da infraestrutura.\n- Ex.: endpoint do banco de dados, tópicos de mensageria\n- Ganha rastreabilidade e controle de versão\n- Aplicação consistente entre ambientes",
+      "nivel": "Iniciante"
+    },
+    {
+      "conceito": "Autenticação do Kubernetes Provider em CI/CD",
+      "pergunta": "Por que usar `config_path = \"~/.kube/config\"` no Kubernetes Provider deve ser evitado em pipelines de CI/CD, e como deve ser feita a conexão?",
+      "resposta": "Porque ambientes **efêmeros** de CI/CD **não têm** o arquivo `~/.kube/config`.\n- Alimente o provider com **dados do próprio provisionamento** do cluster: `host`, `cluster_ca_certificate`\n- Use **tokens temporários** da autenticação nativa da nuvem ou OIDC",
+      "nivel": "Avançado"
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "flashcards": [
+    {
+      "conceito": "Papel do Terragrunt no Ecossistema IaC",
+      "pergunta": "Qual é a relação do Terragrunt com o Terraform/OpenTofu e qual problema estrutural ele resolve?",
+      "resposta": "O Terragrunt é uma **camada fina (wrapper)** sobre o Terraform/OpenTofu — ele não os substitui.\n- Resolve a **duplicação de código** entre ambientes (`dev`, `staging`, `prod`) → princípio **DRY**\n- Permite **herança hierárquica** de configurações\n- Centraliza o **backend** e orquestra a execução dos módulos",
+      "nivel": "Iniciante"
+    },
+    {
+      "conceito": "Separação de Módulos e Ambientes Vivos (live)",
+      "pergunta": "Por que a arquitetura recomendada para Terragrunt separa o repositório entre os diretórios `modules/` e `live/`?",
+      "resposta": "Para separar **o que é a infraestrutura** (código reutilizável) de **onde ela é aplicada** (ambientes).\n- **`modules/`** → código Terraform puro, genérico e reaproveitável\n- **`live/`** → configuração real de cada ambiente (`dev`, `prod`...)\n- Os ambientes só **instanciam e parametrizam** os módulos via `terragrunt.hcl`, sem copiar infraestrutura inteira",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Herança com find_in_parent_folders()",
+      "pergunta": "Como o Terragrunt implementa o princípio DRY para evitar repetição de configurações comuns nos ambientes?",
+      "resposta": "Com o bloco **`include`** usando a função **`find_in_parent_folders()`**.\n- O `terragrunt.hcl` da pasta filha **herda** as definições dos níveis acima\n- Configurações globais (backend, providers) ficam **uma única vez** no `terragrunt.hcl` raiz\n```hcl\ninclude \"root\" {\n  path = find_in_parent_folders()\n}\n```",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Centralização de Remote State",
+      "pergunta": "Como o bloco `remote_state` do Terragrunt melhora o gerenciamento de estado em comparação ao Terraform puro?",
+      "resposta": "O `remote_state` é declarado **uma única vez** no arquivo raiz e vale para todos os módulos.\n- **Terraform puro** → cada módulo tem um bloco `backend` hardcoded ou copiado\n- **Terragrunt** → a `key` do state é gerada dinamicamente por módulo\n- Todos compartilham o mesmo bucket e lock table, de forma padronizada\n```hcl\nkey = \"${path_relative_to_include()}/terraform.tfstate\"\n```",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Geração Dinâmica de Código (generate)",
+      "pergunta": "Qual é a utilidade do bloco `generate` no Terragrunt e qual problema ele soluciona?",
+      "resposta": "O `generate` **cria arquivos `.tf` automaticamente** (ex.: `provider.tf`) antes de rodar o Terraform.\n- Evita declarar o mesmo bloco `provider` em todos os módulos filhos\n- Mantém versões e regiões **centralizadas** em um só lugar",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "Gerenciamento de Dependências (dependency)",
+      "pergunta": "Como o bloco `dependency` permite encadear módulos mantendo estados separados?",
+      "resposta": "O módulo aponta para outro via **`config_path`** e consome os **outputs** dele como inputs.\n- Ex.: `dependency.vpc.outputs.vpc_id` usado pelo módulo EKS\n- Cada módulo (VPC, EKS) mantém seu **state isolado**\n- Resultado: menor **raio de impacto** (blast radius) nas alterações",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "Mocks em Dependências (mock_outputs)",
+      "pergunta": "Por que o uso de `mock_outputs` é relevante em blocos `dependency` durante comandos de validação ou planejamento?",
+      "resposta": "Porque um módulo que **ainda não foi criado não tem outputs reais** no state.\n- Cenário típico: o primeiro `plan` de uma stack inteira\n- `mock_outputs` injeta **valores provisórios**\n- Assim `plan` e `validate` do módulo consumidor passam sem erro de dependência ausente",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "Orquestração em Cascata (run-all)",
+      "pergunta": "Qual é a diferença funcional entre os comandos `terragrunt apply` e `terragrunt run-all apply`?",
+      "resposta": "A diferença é o **escopo**: um módulo só ou a árvore inteira.\n- **`terragrunt apply`** → só o módulo do diretório atual\n- **`terragrunt run-all apply`** → descobre **recursivamente** todos os módulos abaixo, monta o **grafo de dependências** e aplica na ordem correta",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Interoperabilidade Terraform e OpenTofu",
+      "pergunta": "Como o Terragrunt possibilita alternar entre o Terraform e o OpenTofu sem a necessidade de reescrever módulos?",
+      "resposta": "Pela variável **`terraform_binary`**, definida de forma centralizada no arquivo raiz.\n- O Terragrunt redireciona as chamadas de CLI para o binário escolhido\n- O código HCL dos módulos **não muda**\n```hcl\nterraform_binary = \"tofu\" # ou \"terraform\"\n```",
+      "nivel": "Iniciante"
+    },
+    {
+      "conceito": "Resiliência e Retentativas de CLI",
+      "pergunta": "Como o Terragrunt previne falhas intermitentes causadas por concorrência de state lock ou limites de taxa de API?",
+      "resposta": "Com **retentativas automáticas** configuradas no bloco `terraform`.\n- **`retryable_errors`** → regex dos erros a capturar (ex.: `Error acquiring the state lock`)\n- **`retry_max_attempts`** → quantas vezes tentar de novo\n- **`retry_sleep_interval_sec`** → espera entre as tentativas",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "Versionamento de Módulos em Repositórios",
+      "pergunta": "Por que é considerado uma boa prática referenciar módulos externos usando Git tags no `terraform.source`?",
+      "resposta": "Para garantir **imutabilidade**: o ambiente sempre usa a mesma versão do módulo.\n- Ex.: URL Git com `?ref=v1.2.3`\n- Evita mudanças inesperadas vindas de commits na branch principal\n- Permite **promover versões gradualmente** (testa `v1.3.0` em `dev` antes de `prod`)",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Automação em CI/CD",
+      "pergunta": "Qual parâmetro é mandatório ao executar comandos `run-all` do Terragrunt em pipelines de CI/CD não-assistidos e por quê?",
+      "resposta": "A flag **`--terragrunt-non-interactive`**.\n- Suprime os prompts de confirmação no terminal\n- Sem ela, a pipeline **congela** esperando uma resposta humana",
+      "nivel": "Iniciante"
+    },
+    {
+      "conceito": "Função path_relative_to_include()",
+      "pergunta": "Qual é a função do helper `path_relative_to_include()` na configuração do remote state e qual problema operacional ele resolve?",
+      "resposta": "Calcula o **caminho relativo** entre o `terragrunt.hcl` do módulo filho e o arquivo pai incluído.\n- Gera automaticamente uma **`key` única** no S3 para cada módulo, baseada na árvore de diretórios\n- Evita que dois módulos **sobrescrevam o mesmo tfstate**\n- Elimina paths hardcoded",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Função find_in_parent_folders()",
+      "pergunta": "Como a função `find_in_parent_folders()` viabiliza a herança hierárquica dentro de blocos `include` no Terragrunt?",
+      "resposta": "Ela **sobe pelos diretórios ancestrais** até achar o primeiro arquivo com o nome informado (padrão: `terragrunt.hcl`).\n- Módulos filhos importam configs da raiz e de níveis intermediários\n- Sem caminhos absolutos → estrutura **desacoplada**",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Injeção de variáveis via bloco inputs",
+      "pergunta": "Como o bloco `inputs` do Terragrunt difere da passagem tradicional de variáveis por arquivos `.tfvars` no Terraform puro?",
+      "resposta": "O `inputs` aceita **qualquer expressão HCL**, não só valores fixos.\n- Pode usar `locals`, outputs de `dependency` e funções de herança\n- **`.tfvars`** → valores estáticos\n- Na execução, o Terragrunt injeta os valores no Terraform (variáveis de ambiente `TF_VAR_*`)",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Bloco extra_arguments",
+      "pergunta": "Para que serve o bloco `extra_arguments` na configuração do Terragrunt e qual é um caso de uso prático em projetos corporativos?",
+      "resposta": "Ele **anexa flags automaticamente** a comandos específicos do Terraform/OpenTofu (`plan`, `apply`, `destroy`...).\n- Caso prático: padronizar `-parallelism=10` para limitar a concorrência na API do provedor em pipelines",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "Ordem de destruição com terragrunt run-all destroy",
+      "pergunta": "Como o `terragrunt run-all destroy` determina a ordem de destruição dos módulos em comparação ao `run-all apply`?",
+      "resposta": "Ele **inverte o grafo de dependências** (DAG).\n- **`apply`** → da base para o topo (VPC → EKS)\n- **`destroy`** → dependentes primeiro (EKS → VPC)\n- Evita erros por tentar remover recursos ainda em uso",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Padronização de diretórios multi-ambiente",
+      "pergunta": "Qual é a justificativa técnica para estruturar projetos no padrão `infra/<env>/<region>/<stack>/<módulo>` com Terragrunt?",
+      "resposta": "**Isolar o blast radius**: state e execução ficam particionados por ambiente e região.\n- A árvore de pastas espelha a infraestrutura real\n- Permite **herança em cascata** das configurações\n- Permite rodar comandos em um nível específico da árvore",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "terragrunt hclfmt",
+      "pergunta": "Qual é a finalidade do comando `terragrunt hclfmt` e como ele se integra às práticas de CI/CD?",
+      "resposta": "Ele **formata recursivamente** todos os `terragrunt.hcl` no padrão canônico do HCL.\n- Usado em hooks de **pre-commit** e etapas de **lint** na pipeline\n- Garante legibilidade e consistência entre times",
+      "nivel": "Iniciante"
+    },
+    {
+      "conceito": "Segurança e Assume Role dinâmico",
+      "pergunta": "Como o bloco `generate` do Terragrunt é utilizado para implementar a prática segura de Assume Role em arquiteturas AWS multi-conta?",
+      "resposta": "O `generate` cria o `provider.tf` com um bloco **`assume_role`** apontando para a role da conta do ambiente alvo.\n- A ARN muda por ambiente (`dev`, `staging`, `prod`) via `locals` ou secrets do CI/CD\n- Aplica o **menor privilégio** sem replicar código manualmente",
+      "nivel": "Avançado"
+    }
+  ]
+}

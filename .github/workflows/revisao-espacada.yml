@@ -1,0 +1,40 @@
+name: gerar-cards
+
+on:
+  push:
+    branches: [ "main" ]
+    # Só roda quando algum README muda (README.md, README.MD...)
+    paths:
+      - "**/[Rr][Ee][Aa][Dd][Mm][Ee].*"
+
+  # Permite rodar manualmente pela aba Actions
+  workflow_dispatch:
+
+# A pipeline commita os cards de volta no repositório
+permissions:
+  contents: write
+
+# Evita dois pushes seguidos gerarem commits concorrentes
+concurrency:
+  group: gerar-cards
+  cancel-in-progress: false
+
+jobs:
+  flashcards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # histórico completo para o git diff com o commit anterior ao push
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: pip install requests
+
+      - name: Criar perguntas sobre as anotações 🧐
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python anotacoes.py --base origin/main
