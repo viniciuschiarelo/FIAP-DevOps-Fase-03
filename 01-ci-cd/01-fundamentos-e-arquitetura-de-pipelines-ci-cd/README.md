@@ -184,3 +184,6 @@ Isso traz mais controle, histórico e previsibilidade, porque toda mudança impo
 ## Link da aula
 
 - https://github.com/josenetoo/fiap-dclt-aula01
+
+
+a

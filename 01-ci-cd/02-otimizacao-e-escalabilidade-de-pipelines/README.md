@@ -123,3 +123,5 @@ Quando for necessário alterar alguma coisa, a mudança é feita em um único lu
 Otimizar pipelines não é só fazer tudo rodar mais rápido.
 
 Também significa organizar melhor o fluxo, rodar em paralelo o que faz sentido, respeitar dependências e reaproveitar configurações comuns.
+
+a
