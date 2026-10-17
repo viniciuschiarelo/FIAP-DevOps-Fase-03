@@ -15,7 +15,7 @@ Fluxo:
 
 Uso local (mudanças ainda não commitadas):
     export GEMINI_API_KEY="sua-chave"
-    python anotacoes.py --local --obsidian-dir /media/vinicius/hd1/FIAP-docs
+    python anotacoes.py --local   # exporta para ./vault se ele existir
 
 Uso na pipeline (compara o commit atual com o anterior):
     python anotacoes.py --base HEAD~1
@@ -23,7 +23,7 @@ Uso na pipeline (compara o commit atual com o anterior):
     python anotacoes.py --base origin/main
 
 Copiar os flashcards/*.json já gerados para o Obsidian (não usa a API):
-    python anotacoes.py --sync-obsidian /media/vinicius/hd1/FIAP-docs
+    python anotacoes.py --sync-obsidian vault
     # roda sozinho após o git pull pelo hook .githooks/post-merge
 
 Chave grátis: https://aistudio.google.com/apikey
@@ -62,6 +62,8 @@ NIVEIS_VALIDOS = {"Iniciante", "Intermediário", "Avançado"}
 # Obsidian (plugin Spaced Repetition): pasta dentro do vault e tag raiz do deck
 OBSIDIAN_SUBDIR = "Flashcards"
 OBSIDIAN_TAG = "#flashcards"
+# Vault padrão, relativo à raiz do repo (usado se existir e não houver --obsidian-dir)
+OBSIDIAN_VAULT_PADRAO = "vault"
 
 
 # ============================================================
@@ -195,7 +197,18 @@ Os cards são lidos no Obsidian, então "pergunta" e "resposta" usam Markdown:
 </anotacoes_para_analise>"""
 
 
-def chamar_gemini(prompt: str, pdfs: list[Path], api_key: str) -> dict:
+def chamar_gemini(
+    prompt: str,
+    pdfs: list[Path],
+    api_key: str,
+    validar=None,
+    max_tokens: int = 8192,
+) -> dict:
+    """Envia prompt + PDFs ao Gemini e devolve o JSON já validado.
+
+    `validar` recebe o dict parseado e deve devolvê-lo (ou levantar ValueError
+    para forçar nova tentativa). Padrão: validação de flashcards.
+    """
     import requests  # só é necessário quando chama a API (o --sync-obsidian não usa)
 
     parts = [{"text": prompt}]
@@ -221,7 +234,7 @@ def chamar_gemini(prompt: str, pdfs: list[Path], api_key: str) -> dict:
         "contents": [{"parts": parts}],
         "generationConfig": {
             "temperature": 0.3,
-            "maxOutputTokens": 8192,
+            "maxOutputTokens": max_tokens,
             "responseMimeType": "application/json",
         },
     }
@@ -244,7 +257,7 @@ def chamar_gemini(prompt: str, pdfs: list[Path], api_key: str) -> dict:
                 )
 
             texto = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-            return limpar_e_parsear_json(texto)
+            return (validar or validar_flashcards)(parsear_json(texto))
 
         except (requests.exceptions.RequestException, KeyError, IndexError, ValueError) as e:
             ultimo_erro = e
@@ -255,14 +268,16 @@ def chamar_gemini(prompt: str, pdfs: list[Path], api_key: str) -> dict:
     raise RuntimeError(f"Falha ao chamar a API Gemini: {ultimo_erro}")
 
 
-def limpar_e_parsear_json(texto: str) -> dict:
+def parsear_json(texto: str) -> dict:
     texto = texto.strip()
     if texto.startswith("```"):
         texto = texto.strip("`")
         if texto.lower().startswith("json"):
             texto = texto[4:]
-    dados = json.loads(texto.strip())
+    return json.loads(texto.strip())
 
+
+def validar_flashcards(dados: dict) -> dict:
     cards = dados.get("flashcards")
     if not isinstance(cards, list):
         raise ValueError("JSON sem a lista 'flashcards'")
@@ -485,7 +500,7 @@ def main() -> int:
     parser.add_argument(
         "--obsidian-dir",
         default=os.environ.get("OBSIDIAN_VAULT"),
-        help="Vault do Obsidian para onde exportar os cards gerados (padrão: $OBSIDIAN_VAULT)",
+        help=f"Vault do Obsidian para onde exportar os cards gerados (padrão: $OBSIDIAN_VAULT ou ./{OBSIDIAN_VAULT_PADRAO})",
     )
     parser.add_argument(
         "--sync-obsidian",
@@ -501,6 +516,8 @@ def main() -> int:
         return sincronizar_obsidian(saida_dir, Path(args.sync_obsidian).expanduser())
 
     vault = Path(args.obsidian_dir).expanduser() if args.obsidian_dir else None
+    if vault is None and (repo / OBSIDIAN_VAULT_PADRAO / ".obsidian").is_dir():
+        vault = repo / OBSIDIAN_VAULT_PADRAO
     if vault and not (vault / ".obsidian").is_dir():
         print(f"⚠️  {vault} não parece ser um vault do Obsidian; exportação desativada.")
         vault = None

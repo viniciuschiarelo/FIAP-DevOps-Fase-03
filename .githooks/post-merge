@@ -5,11 +5,12 @@
 # Ativar uma vez por clone:  git config core.hooksPath .githooks
 # Outro vault:               export OBSIDIAN_VAULT=/caminho/do/vault
 
-VAULT="${OBSIDIAN_VAULT:-/media/vinicius/hd1/FIAP-docs}"
+VAULT="${OBSIDIAN_VAULT:-vault}"
 
 if [ ! -d "$VAULT/.obsidian" ]; then
-  echo "flashcards: vault não encontrado em $VAULT (HD montado?), pulando sincronização."
+  echo "flashcards: vault não encontrado em $VAULT (abra a pasta no Obsidian uma vez), pulando sincronização."
   exit 0
 fi
 
 python3 anotacoes.py --sync-obsidian "$VAULT" || true
+python3 estude-fazendo.py --sync-obsidian "$VAULT" || true

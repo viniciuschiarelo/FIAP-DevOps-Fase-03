@@ -10,7 +10,7 @@ on:
   # Permite rodar manualmente pela aba Actions
   workflow_dispatch:
 
-# A pipeline commita os cards de volta no repositório
+# A pipeline commita os cards e labs de volta no repositório
 permissions:
   contents: write
 
@@ -34,7 +34,41 @@ jobs:
       - name: Instalar dependências
         run: pip install requests
 
+      # Commit base do diff: o que estava no main antes do push.
+      # (origin/main já aponta para o próprio push, então o diff ficaria vazio.)
+      # No disparo manual ou no primeiro push, compara com o commit anterior.
+      - name: Descobrir commit base
+        id: base
+        run: |
+          BASE="${{ github.event.before }}"
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            BASE="HEAD~1"
+          fi
+          echo "sha=$BASE" >> "$GITHUB_OUTPUT"
+
       - name: Criar perguntas sobre as anotações 🧐
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python anotacoes.py --base origin/main
+        run: python anotacoes.py --base "${{ steps.base.outputs.sha }}"
+
+      - name: Criar laboratórios práticos 🛠️
+        # Roda mesmo se os flashcards falharem: um não depende do outro
+        if: ${{ !cancelled() }}
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python estude-fazendo.py --base "${{ steps.base.outputs.sha }}"
+
+      - name: Commitar flashcards e labs
+        if: ${{ !cancelled() }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for d in flashcards labs; do
+            if [ -d "$d" ]; then git add "$d"; fi
+          done
+          if git diff --cached --quiet; then
+            echo "Nada novo para commitar."
+            exit 0
+          fi
+          git commit -m "chore: flashcards e labs gerados automaticamente [skip ci]"
+          git push
