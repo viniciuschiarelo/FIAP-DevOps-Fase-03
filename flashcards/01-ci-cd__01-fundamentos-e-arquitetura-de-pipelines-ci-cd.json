@@ -1,0 +1,76 @@
+{
+  "flashcards": [
+    {
+      "conceito": "Continuous Delivery vs. Continuous Deployment",
+      "pergunta": "Qual é a diferença fundamental entre Continuous Delivery e Continuous Deployment na fase de CD?",
+      "resposta": "A distinção central reside no nível de automação e na presença de intervenção humana no **gatilho de liberação em produção**.\n- **Continuous Delivery** → o artefato é testado e mantido sempre pronto para produção, mas o deploy final exige aprovação manual.\n- **Continuous Deployment** → todas as alterações aprovadas na pipeline são implantadas automaticamente em produção sem intervenção humana.\n- **Tomada de decisão** → Continuous Delivery é comum em setores regulamentados para compliance, enquanto Continuous Deployment maximiza agilidade.",
+      "nivel": "Iniciante"
+    },
+    {
+      "conceito": "Pipeline as Code (PaC)",
+      "pergunta": "O que caracteriza a prática de Pipeline as Code (PaC) e quais benefícios ela traz para a equipe?",
+      "resposta": "Consiste em declarar e manter a lógica das pipelines de automação por meio de **arquivos de configuração versionados** no repositório.\n- **Princípios de software** → permite versionamento, rastreabilidade, auditoria e revisão por pull requests dos fluxos de entrega.\n- **Eliminação de silos** → substitui configurações manuais em interfaces gráficas por definições legíveis e padronizadas.\n- **Exemplo** → workflows definidos em YAML em ferramentas como GitHub Actions sob a pasta `.github/workflows/`.",
+      "nivel": "Iniciante"
+    },
+    {
+      "conceito": "GitHub Actions: Jobs e Paralelismo",
+      "pergunta": "Como o GitHub Actions organiza a execução de jobs concorrentes e dependências sequenciais?",
+      "resposta": "Por padrão, múltiplos jobs executam em **paralelo em runners isolados**, a menos que haja dependência explícita via `needs`.\n- **Execução paralela** → jobs independentes rodam ao mesmo tempo para reduzir o tempo total da pipeline.\n- **Execução sequencial** → o atributo `needs` define pré-requisitos lógicos para que um job aguarde a conclusão de outro.\n- **Tratamento de erro** → se um job declarado em `needs` falhar, os jobs dependentes são ignorados por padrão.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "GitHub Actions: Reusable Workflows vs Composite Actions",
+      "pergunta": "Qual a diferença entre Reusable Workflows e Composite Actions no GitHub Actions?",
+      "resposta": "Eles se diferenciam pelo escopo de execução e pela forma como lidam com **jobs, runners e segredos**.\n- **Reusable Workflows** → reutilizam workflows completos com múltiplos jobs e runners próprios, além de consumirem `secrets` do repositório.\n- **Composite Actions** → combinam múltiplos steps reutilizáveis dentro do contexto de um único job existente.\n- **Acesso a credenciais** → Composite Actions não acessam segredos globais nativamente, exigindo passagem explícita por parâmetros de entrada.",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "DevSecOps: Shift-Left Security",
+      "pergunta": "Como os mecanismos SAST, DAST e SCA implementam o conceito de Shift-Left em pipelines de CI/CD?",
+      "resposta": "Eles antecipam a detecção de riscos integrando verificações de segurança nas **etapas iniciais do ciclo de desenvolvimento**.\n- **SAST** → análise de caixa branca que examina o código-fonte em busca de falhas antes mesmo da compilação.\n- **SCA** → verificação automatizada que identifica vulnerabilidades e licenças irregulares em dependências externas de terceiros.\n- **DAST** → análise de caixa preta executada em tempo de execução para simular ataques externos contra a aplicação ativa.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Jenkins: Arquitetura Master/Agent",
+      "pergunta": "Como a arquitetura Master/Agent (Controller/Agent) do Jenkins viabiliza a distribuição e escala de pipelines?",
+      "resposta": "A arquitetura separa a inteligência de gerenciamento da **execução física das tarefas de build**.\n- **Jenkins Master** → orquestrador central encarregado de agendar jobs, registrar logs e monitorar o status das execuções.\n- **Jenkins Agent** → nós operacionais (VMs ou pods Kubernetes) que recebem e executam as instruções de trabalho do Master.\n- **Escalabilidade horizontal** → permite distribuir cargas pesadas e provisionar nós sob demanda com diferentes ambientes operacionais.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Jenkins vs. GitHub Actions",
+      "pergunta": "Quais critérios arquiteturais guiam a escolha estratégica entre Jenkins e GitHub Actions?",
+      "resposta": "A decisão é orientada pelo dilema técnico entre **controle granular da infraestrutura vs. conveniência e agilidade SaaS**.\n- **Jenkins** → indicado para redes isoladas (air-gapped), infraestruturas legadas e demandas que exigem controle total de servidores e plugins.\n- **GitHub Actions** → indicado para arquiteturas nativas da nuvem, configuração simplificada em YAML e redução de sobrecarga operacional.\n- **Custo operacional** → o Jenkins elimina licença mas exige sustentação de hosts, enquanto o GitHub Actions adota cobrança sob demanda.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Estratégias de Deploy: Rolling Update vs Blue/Green vs Canary",
+      "pergunta": "Qual a diferença de comportamento entre as estratégias de implantação Rolling Update, Blue/Green e Canary?",
+      "resposta": "Cada estratégia estabelece um equilíbrio diferente entre **custo de infraestrutura, risco de falha e tempo de reversão**.\n- **Rolling Update** → substitui gradativamente as instâncias da versão antiga pela nova sem exigir infraestrutura extra duplicada.\n- **Blue/Green** → mantém dois ambientes completos idênticos e chaveia o tráfego de uma só vez, viabilizando rollback instantâneo.\n- **Canary** → expõe a nova versão a um percentual mínimo de usuários para monitorar métricas antes de propagar para 100% da base.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "GitOps",
+      "pergunta": "Por que o GitOps é definido como um modelo declarativo de entrega contínua baseado em conciliação?",
+      "resposta": "Porque utiliza o repositório Git como a **única fonte da verdade** para determinar o estado desejado da aplicação.\n- **Abordagem declarativa** → o estado pretendido da infraestrutura ou do Kubernetes é versionado em manifestos no Git.\n- **Operador contínuo** → agentes no cluster comparam continuamente o estado atual em produção com o estado declarado no repositório.\n- **Auto-reconciliação** → divergências causadas por alterações manuais não autorizadas são sobrescritas para refletir estritamente o Git.",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "GitOps: Argo CD vs Flux",
+      "pergunta": "Como Argo CD e Flux se comparam como soluções GitOps dentro do ecossistema CNCF?",
+      "resposta": "Ambos executam reconciliação declarativa, mas diferem no foco de **interface de operação e pegada arquitetural**.\n- **Argo CD** → disponibiliza UI rica para visualização e gerenciamento simplificado de múltiplos clusters, ideal para grandes times.\n- **Flux** → adota arquitetura modular minimalista com foco prioritário em CLI e APIs do Kubernetes, ideal para ambientes headless e air-gapped.\n- **Avanços de deploy** → ambos suportam estratégias de entrega progressiva como Canary e Blue/Green em microsserviços.",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "Observabilidade em CI/CD",
+      "pergunta": "Qual o valor da observabilidade em pipelines de CI/CD em relação ao monitoramento tradicional?",
+      "resposta": "A observabilidade busca esclarecer o **motivo de comportamentos e gargalos internos**, superando o simples alerta binário de falha.\n- **Tríade de dados** → unifica logs, métricas de execução e traces distribuídos para auditar desde o commit até o deploy.\n- **Flaky tests** → auxilia na identificação de testes instáveis que falham de maneira inconsistente sem causa funcional clara.\n- **Decisão técnica** → utiliza dados históricos para redimensionar runners, mitigar gargalos de build e aprimorar fluxos de trabalho.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Platform Engineering",
+      "pergunta": "De que forma a Engenharia de Plataformas atua como a próxima evolução do DevOps para times de software?",
+      "resposta": "Construindo **portais internos de autoatendimento (Internal Developer Platforms - IDPs)** para abstrair a infraestrutura dos desenvolvedores.\n- **Redução de carga cognitiva** → dispensa equipes de produto da manutenção complexa de toolchains de CI/CD e configurações cloud.\n- **Golden Paths** → cria caminhos estruturados e pré-aprovados que aplicam governança, segurança e conformidade automaticamente.\n- **Infraestrutura como produto** → transforma o DevOps de prática dispersa para um produto interno focado em experiência de desenvolvimento.",
+      "nivel": "Avançado"
+    }
+  ]
+}

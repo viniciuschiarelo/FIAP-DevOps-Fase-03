@@ -1,0 +1,82 @@
+{
+  "flashcards": [
+    {
+      "conceito": "Pipeline Multi-Stage",
+      "pergunta": "Qual é o papel da instrução `needs` na estruturação de pipelines multi-stage no GitHub Actions?",
+      "resposta": "O campo `needs` estabelece uma **dependência sequencial explícita** entre jobs no fluxo de trabalho.\n- Cria portões de validação que impedem a execução de etapas posteriores caso a fase anterior falhe.\n- Permite que etapas independentes executem em paralelo por padrão até que um bloqueio seja declarado.\n- Evita desperdício de recursos computacionais ao impedir builds e deploys de código quebrado.",
+      "nivel": "Iniciante"
+    },
+    {
+      "conceito": "Matrix Strategy",
+      "pergunta": "Como a `matrix strategy` otimiza o tempo e o esforço de teste em pipelines de CI/CD?",
+      "resposta": "A estratégia gera **múltiplos jobs paralelos** a partir de uma única definição combinatória de variáveis.\n- Elimina duplicações de código ao testar combinações de versões de runtimes e sistemas operacionais.\n- Acelera o tempo de feedback executando as matrizes de teste simultaneamente.\n- É declarada no bloco `strategy.matrix` informando listas para cada parâmetro desejado.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Matrix Strategy (fail-fast)",
+      "pergunta": "Qual é o comportamento do parâmetro `fail-fast` na matrix strategy e quando desativá-lo?",
+      "resposta": "O parâmetro controla o **cancelamento automático** de todos os jobs irmãos da matriz caso um deles falhe.\n- **Padrão (`fail-fast: true`)** → Cancela imediatamente os demais jobs em andamento para poupar recursos e custos.\n- **Desativado (`fail-fast: false`)** → Garante que todas as variações executem até o fim independentemente de falhas individuais.\n- Deve ser desativado quando é necessário obter a matriz de diagnóstico completa sobre quais ambientes quebraram.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Matrix Strategy (include e exclude)",
+      "pergunta": "Como as diretivas `include` e `exclude` refinam o conjunto de execuções gerado pela matriz?",
+      "resposta": "Elas servem para **filtrar incompatibilidades ou injetar combinações** específicas no produto cartesiano da matriz.\n- **`exclude`** → Remove combinações pontuais indesejadas ou incompatíveis da matriz original.\n- **`include`** → Adiciona novas configurações customizadas ou variáveis adicionais a combinações existentes.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Matriz Dinâmica (fromJSON)",
+      "pergunta": "Em quais cenários e como a função `fromJSON()` viabiliza uma matriz dinâmica no GitHub Actions?",
+      "resposta": "A função `fromJSON()` viabiliza matrizes dinâmicas **convertendo strings JSON geradas em tempo de execução** em matrizes de jobs.\n- Muito utilizada em monorepos para evitar a execução de testes em serviços que não sofreram alterações.\n- Um job prévio analisa o diff do pull request e emite uma lista formatada em JSON como output.\n- O job seguinte consome esse output dinamicamente via `matrix: ${{ fromJSON(needs.job_previo.outputs.matrix) }}`.",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "Workflows Reutilizáveis",
+      "pergunta": "O que caracteriza um workflow reutilizável e qual gatilho viabiliza seu consumo por outros repositórios?",
+      "resposta": "Um workflow reutilizável atua como um **template centralizado de automação** ativado pelo gatilho `on: workflow_call`.\n- Recebe entradas parametrizadas através da chave `inputs` e credenciais seguras via `secrets`.\n- Permite que múltiplos repositórios (chamadores ou callers) consumam o mesmo padrão operacional.\n- Centraliza correções e melhorias, aplicando-as automaticamente a todos os pipelines que o invocam.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Workflows Reutilizáveis vs Composite Actions",
+      "pergunta": "Qual a diferença de escopo, permissões e visibilidade entre Workflows Reutilizáveis e Composite Actions?",
+      "resposta": "A distinção baseia-se no **nível de abstração e capacidade de isolamento** dentro do ecossistema do GitHub Actions.\n- **Workflows Reutilizáveis** → Reutilizam múltiplos jobs completos, suportam passagem nativa de secrets e exibem logs detalhados e independentes.\n- **Composite Actions** → Reutilizam apenas steps dentro de um único job, não acessam secrets diretamente e agrupam todos os logs em uma única visualização.",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "Governança e Segurança em Workflows",
+      "pergunta": "Por que a boa prática de segurança recomenda fixar workflows reutilizáveis via commit SHA em vez de tags ou branches?",
+      "resposta": "A fixação por commit SHA assegura a **imutabilidade estrita do código executado**, blindando a cadeia de suprimentos.\n- Tags e branches são ponteiros mutáveis que podem ser sobrescritos acidental ou maliciosamente.\n- Garante conformidade ao impedir que alterações não auditadas entrem automaticamente na pipeline chamadora.\n- Cumpre os requisitos de auditoria e estabilidade exigidos em ambientes regulados.",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "GitHub-hosted vs Self-hosted Runners",
+      "pergunta": "Quais são as principais vantagens financeiras e de rede que justificam a adoção de self-hosted runners?",
+      "resposta": "Eles oferecem **isenção de minutos tarifados e integração com redes privadas**, compensando o esforço de gestão.\n- **Custo** → Os minutos de execução em repositórios privados não são cobrados pelo GitHub.\n- **Segurança e Rede** → Executam dentro de VPCs privadas, herdando papéis como IAM Roles sem expor credenciais de nuvem para a internet.\n- **Controle** → Permitem uso de imagens hardened e hardware customizado conforme exigências da organização.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Segurança de Self-hosted Runners",
+      "pergunta": "Por que o GitHub desencoraja categoricamente o uso de self-hosted runners em repositórios públicos?",
+      "resposta": "A prática expõe a infraestrutura corporativa ao **risco de execução arbitrária de código** vindo de pull requests externos.\n- Qualquer usuário externo pode abrir um pull request contendo scripts maliciosos para rodar no servidor.\n- Cria vetores diretos para invasão da rede privada, roubo de metadados de nuvem e movimentação lateral.\n- Para projetos de código aberto, o padrão seguro obrigatório é a utilização de GitHub-hosted runners.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Actions Runner Controller (ARC)",
+      "pergunta": "Qual problema operacional o Actions Runner Controller (ARC) resolve no gerenciamento de runners?",
+      "resposta": "O ARC implementa o **escalonamento dinâmico de runners efêmeros** provisionados em clusters Kubernetes.\n- Provisiona pods de runners sob demanda acompanhando a métrica da fila de jobs do GitHub.\n- Destrói os runners automaticamente após a conclusão de cada job, garantindo um ambiente limpo e isolado.\n- Elimina a sobrecarga de manutenção estática de máquinas virtuais dedicadas ociosas.",
+      "nivel": "Avançado"
+    },
+    {
+      "conceito": "Cache vs Artifacts",
+      "pergunta": "Qual a diferença fundamental entre o gerenciamento de artefatos (artifacts) e o cache de dependências em pipelines?",
+      "resposta": "A diferença reside na **finalidade e no ciclo de reaproveitamento** dos arquivos gerados.\n- **Cache de dependências** → Armazena pacotes externos imutáveis (ex: `npm`, `pip`, `Maven`) para reutilização entre diferentes execuções da pipeline.\n- **Artefatos (artifacts)** → Armazenam os binários finais gerados pelo build (ex: `.jar`, relatórios) para transferi-los entre jobs ou disponibilizá-los após o término.",
+      "nivel": "Intermediário"
+    },
+    {
+      "conceito": "Engenharia de Plataformas",
+      "pergunta": "Como os workflows reutilizáveis viabilizam a criação de uma Plataforma Interna de Desenvolvedores (IDP)?",
+      "resposta": "Eles transformam regras de automação em **produtos internos consumíveis em autoatendimento** pelos desenvolvedores.\n- Padronizam etapas críticas de build, análise estática de código e deploy sem gerar sobrecarga cognitiva aos times de negócio.\n- Permitem que o time central de plataforma atualize diretrizes de compliance sem exigir mudanças manuais nos repositórios clientes.\n- Movem a equipe de DevOps de uma função de suporte reativo para uma postura de engenharia habilitadora.",
+      "nivel": "Avançado"
+    }
+  ]
+}

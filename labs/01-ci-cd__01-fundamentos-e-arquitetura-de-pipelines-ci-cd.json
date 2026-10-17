@@ -1,0 +1,52 @@
+{
+  "labs": [
+    {
+      "titulo": "Implementação e Troubleshooting de Pipelines CI/CD com GitHub Actions",
+      "tecnologias": [
+        "GitHub Actions",
+        "Docker",
+        "Git",
+        "act",
+        "YAML"
+      ],
+      "objetivo": "Capacitar o aluno a diagnosticar e corrigir falhas sintáticas e de dependência em pipelines declarativos, além de construir uma esteira automatizada completa de CI/CD com paralelismo, portões de qualidade (Shift-Left) e deploy condicional.",
+      "pre_requisitos": [
+        "Git instalado (versão 2.30+)",
+        "Docker instalado e em execução (versão 20.10+)",
+        "Ferramenta act instalada para execução local de workflows (ou acesso direto ao GitHub)"
+      ],
+      "ambiente_recomendado": "Local com Docker e act CLI (ou repositório privado no GitHub / GitHub Codespaces)",
+      "desafios": [
+        {
+          "nivel": "Nível 4 (Break/Fix)",
+          "titulo_desafio": "Diagnóstico de Dependências Inexistentes e Colisão de Chaves em Workflow",
+          "cenario_e_enunciado": "A equipe de engenharia tentou padronizar uma esteira de integração contínua (CI) em um repositório interno. No entanto, após o commit do arquivo `.github/workflows/ci.yml`, a pipeline sequer é aceita pelo motor de execução, acusando falhas estruturais de schema e dependências de jobs inválidas. Analise o arquivo quebrado, identifique as causas raízes e corrija o manifesto para que a pipeline execute com sucesso em paralelo e em sequência conforme o desenho pretendido.",
+          "codigo_inicial_ou_incompleto": "name: CI Pipeline\n\non:\n  push:\n    branches: [ \"main\" ]\n  pull_request:\n    branches: [ \"main\" ]\n\njobs:\n  code-lint:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v4\n      - name: Run Linter\n        run: echo \"Linting code repository...\"\n\n  security-scan:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v4\n      - name: Run SAST Scanner\n        run: echo \"Analyzing code security (Shift Left)...\"\n\n  build-and-test:\n    needs: [lint, security]\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v4\n      - name: Compile and Test Artifact\n        run: echo \"Compiling application and executing unit tests...\"\n        uses: actions/setup-node@v4\n        with:\n          node-version: 18",
+          "instrucoes_de_execucao": "1. Crie uma pasta para o projeto e inicialize o git com `git init`.\n2. Crie o diretório `.github/workflows/` e salve o código inicial em `.github/workflows/ci.yml`.\n3. Execute a validação local com a ferramenta `act` rodando o comando `act --dryrun` ou `act -l`.\n4. Observe os erros de schema e de referência acusados pelo interpretador do workflow.",
+          "dicas": [
+            "Dica 1 (Vaga): Verifique se os identificadores fornecidos na diretiva `needs` correspondem exatamente aos IDs dos jobs declarados no arquivo.",
+            "Dica 2 (Direta): Na especificação do GitHub Actions, um mesmo item da lista `steps` não pode ter simultaneamente as instruções `run` e `uses`.",
+            "Dica 3 (Quase a resposta): No job `build-and-test`, altere o `needs` para `[code-lint, security-scan]` e separe o step `Compile and Test Artifact` em dois steps individuais: um para `uses: actions/setup-node@v4` e outro subsequente para `run: echo ...`."
+          ],
+          "criterio_de_sucesso": "Ao executar `act -l`, todos os 3 jobs (`code-lint`, `security-scan` e `build-and-test`) devem ser listados sem erros de parser. Ao rodar `act -j build-and-test` (ou subir para o GitHub), os jobs anteriores devem executar em paralelo e o job final deve concluir com exit code 0.",
+          "gabarito_comentado": "```yaml\nname: CI Pipeline\n\non:\n  push:\n    branches: [ \"main\" ]\n  pull_request:\n    branches: [ \"main\" ]\n\njobs:\n  code-lint:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v4\n      - name: Run Linter\n        run: echo \"Linting code repository...\"\n\n  security-scan:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v4\n      - name: Run SAST Scanner\n        run: echo \"Analyzing code security (Shift Left)...\"\n\n  build-and-test:\n    needs: [code-lint, security-scan]\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v4\n      - name: Setup Node Runtime\n        uses: actions/setup-node@v4\n        with:\n          node-version: 18\n      - name: Compile and Test Artifact\n        run: echo \"Compiling application and executing unit tests...\"\n```\nCausa raiz: No GitHub Actions, `needs` referencia o ID do job (a chave do dicionário no YAML) e não o rótulo descritivo. Além disso, cada step precisa ser exclusivo: ou invoca uma Action externa via `uses` ou roda comandos de terminal via `run`, nunca ambos no mesmo bloco."
+        },
+        {
+          "nivel": "Nível 5 (Construa do Zero)",
+          "titulo_desafio": "Construção de Esteira Completa de CI/CD com Gate de Segurança e Build Docker",
+          "cenario_e_enunciado": "Você deve projetar e implementar do zero uma esteira corporativa completa de CI/CD para uma aplicação web empacotada em container Docker, aplicando os conceitos de Pipeline as Code e DevSecOps apresentados na aula.\nA esteira deve atender aos seguintes requisitos arquiteturais:\n1. Gatilhos: Executar automaticamente em eventos de `push` e `pull_request` apontando para a branch `main`.\n2. Estágio de Validação (CI / Shift-Left): Dois jobs executando em paralelo: `sast-sca-scan` (simulando análise estática de segurança e dependências) e `unit-tests` (simulando bateria de testes automatizados).\n3. Estágio de Build (Empacotamento): Um job chamado `docker-build` que só inicia se os dois jobs do estágio de validação terminarem com sucesso (`needs`). Este job deve construir uma imagem Docker local usando a tag referenciando o hash curto do commit (`${{ github.sha }}`).\n4. Estágio de Implantação (Continuous Delivery): Um job chamado `deploy-staging` que depende do sucesso de `docker-build`. Este job deve possuir uma guarda condicional (`if`) para que execute estritamente em eventos de `push` na branch `main` (não deve rodar em Pull Requests), simulando a publicação da imagem em staging.",
+          "codigo_inicial_ou_incompleto": "",
+          "instrucoes_de_execucao": "1. Crie um arquivo `Dockerfile` simples na raiz contendo apenas:\n`FROM alpine:3.19`\n`CMD [\"echo\", \"Container operacional\"]`\n2. Crie a estrutura de diretórios `.github/workflows/` e desenvolva o arquivo `.github/workflows/delivery-pipeline.yml`.\n3. Configure todos os estágios, jobs, dependências com `needs`, checkout de código e condições de execução conforme os requisitos.\n4. Valide a sintaxe e a ordem de execução localmente com o comando `act` ou via push em branch de teste no GitHub.",
+          "dicas": [
+            "Dica 1: Para rodar jobs em paralelo, basta declará-los no mesmo nível dentro de `jobs:` sem a instrução `needs`. Para criar a dependência de bloqueio, use `needs: [job1, job2]`.",
+            "Dica 2: Para o build da imagem Docker, você pode utilizar a action oficial `docker/build-push-action@v5` ou simplesmente executar um step com comando `docker build -t minha-app:${{ github.sha }} .`.",
+            "Dica 3: Para a condição no job de deploy, use a cláusula `if: github.event_name == 'push' && github.ref == 'refs/heads/main'` logo abaixo da definição de `runs-on` ou `needs`."
+          ],
+          "criterio_de_sucesso": "Executar localmente `act pull_request` e verificar que os jobs `sast-sca-scan`, `unit-tests` e `docker-build` executam com sucesso, enquanto o job `deploy-staging` é ignorado/pulado. Ao executar `act push`, todos os 4 jobs devem executar com sucesso até a mensagem final de deploy com status exit 0.",
+          "gabarito_comentado": "```yaml\nname: Delivery Pipeline\n\non:\n  push:\n    branches: [ \"main\" ]\n  pull_request:\n    branches: [ \"main\" ]\n\njobs:\n  sast-sca-scan:\n    name: Security and Dependency Analysis\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v4\n      - name: SAST Code Analysis\n        run: echo \"[INFO] Executing Static Application Security Testing... OK\"\n      - name: SCA Dependency Audit\n        run: echo \"[INFO] Checking dependencies for known CVEs... OK\"\n\n  unit-tests:\n    name: Automated Unit Testing\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v4\n      - name: Run Test Suites\n        run: echo \"[INFO] Running unit tests and code coverage... 100% Passed\"\n\n  docker-build:\n    name: Build Docker Container\n    needs: [sast-sca-scan, unit-tests]\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v4\n      - name: Build Application Image\n        run: |\n          docker build -t my-app:${{ github.sha }} .\n          docker images | grep my-app\n\n  deploy-staging:\n    name: Deliver to Staging Environment\n    needs: [docker-build]\n    runs-on: ubuntu-latest\n    if: github.event_name == 'push' && github.ref == 'refs/heads/main'\n    steps:\n      - name: Continuous Delivery Trigger\n        run: |\n          echo \"[DEPLOY] Deploying artifact tag my-app:${{ github.sha }} to staging cluster...\"\n          echo \"[STATUS] Reconciled and active.\"\n```\nDecisões de Arquitetura: Os jobs de segurança e testes rodam em paralelo na fase de CI para garantir feedback rápido sem onerar o tempo total do runner (abordagem Shift Left). O estágio de build atua como um gate bloqueante através do `needs`, garantindo que artefatos só sejam gerados a partir de código aprovado. A condicional `if: github.event_name == 'push'` no estágio de CD impede que testes de pull requests gerem deploys indevidos, viabilizando Continuous Delivery seguro."
+        }
+      ],
+      "gerado_em": "2026-10-17"
+    }
+  ]
+}
